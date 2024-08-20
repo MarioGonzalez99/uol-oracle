@@ -6,6 +6,27 @@ import { useState } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
 import toast from 'react-hot-toast';
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+const components = {
+	table: ({ node, ...props }) => (
+		<table className="table-auto">{props.children}</table>
+	),
+	tbody: ({ node, ...props }) => (
+		<tbody className="divide-y divide-gray-300">{props.children}</tbody>
+	),
+	tr: ({ node, ...props }) => (
+		<tr className="border-b border-gray-300">{props.children}</tr>
+	),
+	th: ({ node, ...props }) => (
+		<th className="px-4 py-2 text-left ">{props.children}</th>
+	),
+	td: ({ node, ...props }) => (
+		<td className="px-4 py-2">{props.children}</td>
+	),
+};
+
 
 const Chat = () => {
 	const [text, setText] = useState("");
@@ -34,7 +55,7 @@ const Chat = () => {
 					const bgColor = role === "user" ? "bg-base-200" : "bg-base-100";
 					return <div key={index} className={`${bgColor} flex py-6 -mx-8 px-8 text-xl leading-loose border-b border-base-300 items-center`}>
 						<span className="mr-4">{avatar}</span>
-						<p className="max-w-3xl">{content}</p>
+						<p className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></p>
 					</div>
 				})}
 				{isPending ? <span className="loading"></span> : null}
