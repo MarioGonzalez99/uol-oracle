@@ -1,5 +1,5 @@
 import Sidebar from "@/components/Sidebar";
-import { FaBarsStaggered } from "react-icons/fa6";
+import { HiMiniBars3 } from "react-icons/hi2";
 
 const layout = ({ children }) => {
   return (
@@ -8,7 +8,7 @@ const layout = ({ children }) => {
       <div className="drawer-content">
         <div className="bg-base-200 px-8 py-12 min-h-screen">
           <label htmlFor="drawer-toggle" className="drawer-button lg:hidden fixed top-6 right-6">
-            <FaBarsStaggered className="w-8 h-8 text-primary" />
+            <HiMiniBars3 className="w-8 h-8 text-primary" />
           </label>
           {children}
         </div>
