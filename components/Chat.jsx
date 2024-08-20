@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
+import toast from 'react-hot-toast';
 
 const Chat = () => {
 	const [text, setText] = useState("");
