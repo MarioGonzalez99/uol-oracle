@@ -1,8 +1,9 @@
 'use client';
 
 import { generateChatResponse } from "@/utils/action";
-import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { getUserMessages, saveUserMessages } from "@/utils/dbutils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
 import toast from 'react-hot-toast';
@@ -31,13 +32,27 @@ const components = {
 const Chat = () => {
 	const [text, setText] = useState("");
 	const [messages, setMessages] = useState([]);
+
+	// Fetch user messages on component mount
+	const { data: initialMessages, isLoading, isError } = useQuery({
+		queryKey: ['userMessages'],
+		queryFn: getUserMessages,
+		onSuccess: (data) => setMessages(data),
+	});
+	useEffect(() => {
+		if (initialMessages) {
+			setMessages(initialMessages);
+		}
+	}, [initialMessages]);
 	const { mutate, isPending } = useMutation({
 		mutationFn: (query) => generateChatResponse([...messages, query]),
 		onSuccess: (data) => {
 			if (!data) {
 				toast.error("Failed to generate response");
 			}
-			setMessages((prev) => [...prev, data]);
+			const updatedMessages = [...messages, data];
+			setMessages(updatedMessages);
+			saveUserMessages(updatedMessages);
 		}
 	});
 	const handleSubmit = (e) => {
@@ -47,6 +62,9 @@ const Chat = () => {
 		setMessages((prev) => [...prev, query]);
 		setText("");
 	};
+
+	if (isLoading) return <div>Loading...</div>;
+	if (isError) return <div>Error loading messages</div>;
 	return (
 		<div className="min-h-[calc(100vh-6rem)] grid grid-rows-[1fr,auto]">
 			<div>

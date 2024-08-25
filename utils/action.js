@@ -75,6 +75,8 @@ Remember to maintain a professional and helpful tone, ensuring that your respons
     );
     return response.choices[0].message;
   } catch (error) {
+    console.error(error);
     return null;
   }
 };
+
