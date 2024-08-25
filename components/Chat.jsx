@@ -55,7 +55,7 @@ const Chat = () => {
 					const bgColor = role === "user" ? "bg-base-200" : "bg-base-100";
 					return <div key={index} className={`${bgColor} flex py-6 -mx-8 px-8 text-xl leading-loose border-b border-base-300 items-center`}>
 						<span className="mr-4">{avatar}</span>
-						<p className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></p>
+						<div className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></div>
 					</div>
 				})}
 				{isPending ? <span className="loading"></span> : null}
