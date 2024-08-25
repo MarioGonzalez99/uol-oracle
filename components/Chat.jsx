@@ -1,12 +1,12 @@
 'use client';
 
 import { generateChatResponse } from "@/utils/action";
-import { getUserMessages, saveUserMessages } from "@/utils/dbutils";
+import { fetchCreditsByUserId, getUserInfo, getUserMessages, saveUserMessages, updateCredits } from "@/utils/dbutils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useRef } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -32,6 +32,7 @@ const components = {
 const Chat = () => {
 	const [text, setText] = useState("");
 	const [messages, setMessages] = useState([]);
+	const [userId, setUserId] = useState("");
 	const chatEndRef = useRef(null);
 	// Fetch user messages on component mount
 	const { data: initialMessages, isLoading } = useQuery({
@@ -39,24 +40,47 @@ const Chat = () => {
 		queryFn: getUserMessages,
 		onSuccess: (data) => setMessages(data),
 	});
+
+	const { data: user } = useQuery({
+		queryKey: ['userInfo'],
+		queryFn: getUserInfo,
+		onSuccess: (data) => setUserId(data),
+	});
+
 	useEffect(() => {
 		if (initialMessages) {
 			setMessages(initialMessages);
 		}
 	}, [initialMessages]);
+
+	useEffect(() => {
+		if (user) {
+			setUserId(user);
+		}
+	}, [user]);
 	useEffect(() => {
 		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 	const { mutate, isPending } = useMutation({
-		mutationFn: (query) => generateChatResponse([...messages, query]),
-		onSuccess: (data) => {
-			if (!data) {
-				toast.error("Failed to generate response");
+		mutationFn: async (query) => {
+			const credits = await fetchCreditsByUserId(userId);
+			if (credits < 1000) {
+				toast.error("Insufficient credits to ask question");
+				return;
 			}
-			const updatedMessages = [...messages, data];
+			const response = await generateChatResponse([...messages, query]);
+			if (!response) {
+				toast.error("Failed to generate response");
+				return;
+			}
+
+			const updatedMessages = [...messages, response.message];
 			setMessages(updatedMessages);
 			saveUserMessages(updatedMessages);
-		}
+
+			const newCredits = await updateCredits(userId, response.credits);
+			toast.success(`Question asked successfully. Remaining credits: ${newCredits}`, { duration: 5000 });
+		},
 	});
 	const handleSubmit = (e) => {
 		e.preventDefault();
@@ -78,6 +102,7 @@ const Chat = () => {
 						<div className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></div>
 					</div>
 				})}
+				<Toaster />
 				<div ref={chatEndRef} />
 				{isPending ? <span className="loading"></span> : null}
 			</div>

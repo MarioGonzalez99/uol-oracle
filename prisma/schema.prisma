@@ -18,3 +18,8 @@ model User {
   name  String?
   thread String?
 }
+
+model Credit {
+  userId Int @id
+  credits Int @default(10000)
+}

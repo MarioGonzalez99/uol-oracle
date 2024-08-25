@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from "next/cache";
 import prisma from "./db";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -62,3 +63,52 @@ export async function saveUserMessages(messages) {
   await updateUserThread(email, messages);
 }
 
+export const fetchCreditsByUserId = async (userId) => {
+  const result = await prisma.credit.findUnique({
+    where: {
+      userId: userId,
+    },
+  });
+  return result?.credits;
+}
+
+export const generateCreditsForUserId = async (userId) => {
+  const result = await prisma.credit.create({
+    data: {
+      userId: userId,
+    },
+  });
+  return result?.credits;
+}
+
+export const fetchOrGenerateCredits = async (userId) => {
+  const result = await fetchCreditsByUserId(userId);
+  if (result) {
+    return result;
+  }
+  return (await generateCreditsForUserId(userId)).credits;
+}
+
+export const updateCredits = async (userId, credits) => {
+  const result = await prisma.credit.update({
+    where: {
+      userId: userId,
+    },
+    data: {
+      credits: {
+        decrement: credits,
+      }
+    },
+  });
+  revalidatePath('/profile');
+  return result.credits;
+}
+
+export const getUserInfo = async () => {
+  const user = await currentUser();
+  const email = user.emailAddresses[0].emailAddress;
+
+  // Check if the user exists in our database
+  let dbUser = await getExistingUserByEmail(email);
+  return dbUser?.id;
+};
