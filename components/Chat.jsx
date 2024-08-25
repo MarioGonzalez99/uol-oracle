@@ -3,7 +3,7 @@
 import { generateChatResponse } from "@/utils/action";
 import { getUserMessages, saveUserMessages } from "@/utils/dbutils";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
 import toast from 'react-hot-toast';
@@ -32,9 +32,9 @@ const components = {
 const Chat = () => {
 	const [text, setText] = useState("");
 	const [messages, setMessages] = useState([]);
-
+	const chatEndRef = useRef(null);
 	// Fetch user messages on component mount
-	const { data: initialMessages, isLoading, isError } = useQuery({
+	const { data: initialMessages, isLoading } = useQuery({
 		queryKey: ['userMessages'],
 		queryFn: getUserMessages,
 		onSuccess: (data) => setMessages(data),
@@ -44,6 +44,9 @@ const Chat = () => {
 			setMessages(initialMessages);
 		}
 	}, [initialMessages]);
+	useEffect(() => {
+		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 	const { mutate, isPending } = useMutation({
 		mutationFn: (query) => generateChatResponse([...messages, query]),
 		onSuccess: (data) => {
@@ -64,7 +67,6 @@ const Chat = () => {
 	};
 
 	if (isLoading) return <div>Loading...</div>;
-	if (isError) return <div>Error loading messages</div>;
 	return (
 		<div className="min-h-[calc(100vh-6rem)] grid grid-rows-[1fr,auto]">
 			<div>
@@ -76,9 +78,11 @@ const Chat = () => {
 						<div className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></div>
 					</div>
 				})}
+				<div ref={chatEndRef} />
 				{isPending ? <span className="loading"></span> : null}
 			</div>
-			<form onSubmit={handleSubmit} className="max-w-4xl pt-12">
+
+			<form onSubmit={handleSubmit} className="sticky w-full bottom-6 max-w-5xl pt-12">
 				<div className="join w-full">
 					<input type="text" placeholder="Ask UoL Oracle" className="input input-bordered join-item w-full" value={text} required onChange={(e) => setText(e.target.value)} />
 					<button className="btn btn-primary join-item" type="submit" disabled={isPending}>
@@ -87,6 +91,7 @@ const Chat = () => {
 				</div>
 			</form>
 		</div>
+
 	);
 };
 
