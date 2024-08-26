@@ -64,7 +64,7 @@ const Chat = () => {
 	const { mutate, isPending } = useMutation({
 		mutationFn: async (query) => {
 			const credits = await fetchCreditsByUserId(userId);
-			if (credits < 1000) {
+			if (credits < 150) {
 				toast.error("Insufficient credits to ask question");
 				return;
 			}
@@ -82,6 +82,14 @@ const Chat = () => {
 			toast.success(`Question asked successfully. Remaining credits: ${newCredits}`, { duration: 5000 });
 		},
 	});
+	const clearMessages = () => {
+		setMessages([]);
+		saveUserMessages([]);
+		toast.success("Chat cleared successfully", { duration: 5000 });
+	};
+	const handleClearChat = () => {
+		clearMessages();
+	};
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		const query = { role: "user", content: text };
@@ -113,6 +121,10 @@ const Chat = () => {
 					<button className="btn btn-primary join-item" type="submit" disabled={isPending}>
 						{isPending ? 'Loading...' : 'Ask Question'}
 					</button>
+					<button className="btn btn-error ml-10" type="button" onClick={handleClearChat} disabled={isPending}>
+						{isPending ? 'Loading...' : 'Clear Chat'}
+					</button>
+
 				</div>
 			</form>
 		</div>
