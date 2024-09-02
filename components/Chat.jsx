@@ -64,7 +64,8 @@ const Chat = () => {
 	const { mutate, isPending } = useMutation({
 		mutationFn: async (query) => {
 			const credits = await fetchCreditsByUserId(userId);
-			if (credits < 150) {
+			const creditsThreshold = Number(process.env.CREDITS_THRESHOLD);
+			if (credits < creditsThreshold) {
 				toast.error("Insufficient credits to ask question");
 				return;
 			}
