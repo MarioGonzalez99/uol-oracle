@@ -1,11 +1,12 @@
 'use client';
 
 import { generateChatResponse } from "@/utils/action";
-import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { fetchCreditsByUserId, getUserInfo, getUserMessages, saveUserMessages, updateCredits } from "@/utils/dbutils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useState, useRef } from "react";
 import { FaUserGraduate } from "react-icons/fa";
 import { GiRearAura } from "react-icons/gi";
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -31,15 +32,64 @@ const components = {
 const Chat = () => {
 	const [text, setText] = useState("");
 	const [messages, setMessages] = useState([]);
-	const { mutate, isPending } = useMutation({
-		mutationFn: (query) => generateChatResponse([...messages, query]),
-		onSuccess: (data) => {
-			if (!data) {
-				toast.error("Failed to generate response");
-			}
-			setMessages((prev) => [...prev, data]);
-		}
+	const [userId, setUserId] = useState("");
+	const chatEndRef = useRef(null);
+	// Fetch user messages on component mount
+	const { data: initialMessages, isLoading } = useQuery({
+		queryKey: ['userMessages'],
+		queryFn: getUserMessages,
+		onSuccess: (data) => setMessages(data),
 	});
+
+	const { data: user } = useQuery({
+		queryKey: ['userInfo'],
+		queryFn: getUserInfo,
+		onSuccess: (data) => setUserId(data),
+	});
+
+	useEffect(() => {
+		if (initialMessages) {
+			setMessages(initialMessages);
+		}
+	}, [initialMessages]);
+
+	useEffect(() => {
+		if (user) {
+			setUserId(user);
+		}
+	}, [user]);
+	useEffect(() => {
+		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
+	const { mutate, isPending } = useMutation({
+		mutationFn: async (query) => {
+			const credits = await fetchCreditsByUserId(userId);
+			if (credits < 150) {
+				toast.error("Insufficient credits to ask question");
+				return;
+			}
+			const response = await generateChatResponse([...messages, query]);
+			if (!response) {
+				toast.error("Failed to generate response");
+				return;
+			}
+
+			const updatedMessages = [...messages, response.message];
+			setMessages(updatedMessages);
+			saveUserMessages(updatedMessages);
+
+			const newCredits = await updateCredits(userId, response.credits);
+			toast.success(`Question asked successfully. Remaining credits: ${newCredits}`, { duration: 5000 });
+		},
+	});
+	const clearMessages = () => {
+		setMessages([]);
+		saveUserMessages([]);
+		toast.success("Chat cleared successfully", { duration: 5000 });
+	};
+	const handleClearChat = () => {
+		clearMessages();
+	};
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		const query = { role: "user", content: text };
@@ -47,6 +97,8 @@ const Chat = () => {
 		setMessages((prev) => [...prev, query]);
 		setText("");
 	};
+
+	if (isLoading) return <div>Loading...</div>;
 	return (
 		<div className="min-h-[calc(100vh-6rem)] grid grid-rows-[1fr,auto]">
 			<div>
@@ -58,17 +110,25 @@ const Chat = () => {
 						<div className="max-w-3xl"><Markdown remarkPlugins={[remarkGfm]} components={components}>{content}</Markdown></div>
 					</div>
 				})}
+				<Toaster />
+				<div ref={chatEndRef} />
 				{isPending ? <span className="loading"></span> : null}
 			</div>
-			<form onSubmit={handleSubmit} className="max-w-4xl pt-12">
+
+			<form onSubmit={handleSubmit} className="sticky w-full bottom-6 max-w-5xl pt-12">
 				<div className="join w-full">
 					<input type="text" placeholder="Ask UoL Oracle" className="input input-bordered join-item w-full" value={text} required onChange={(e) => setText(e.target.value)} />
 					<button className="btn btn-primary join-item" type="submit" disabled={isPending}>
 						{isPending ? 'Loading...' : 'Ask Question'}
 					</button>
+					<button className="btn btn-error ml-10" type="button" onClick={handleClearChat} disabled={isPending}>
+						{isPending ? 'Loading...' : 'Clear Chat'}
+					</button>
+
 				</div>
 			</form>
 		</div>
+
 	);
 };
 
