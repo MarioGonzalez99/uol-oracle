@@ -70,7 +70,7 @@ Remember to maintain a professional and helpful tone, ensuring that your respons
           ...messages,
         ],
         temperature: 0.2,
-        max_tokens: 150,
+        max_tokens: Number(process.env.CREDITS_THRESHOLD),
       }
     );
     return { message: response.choices[0].message, credits: response.usage.completion_tokens };
