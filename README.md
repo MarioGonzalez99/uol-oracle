@@ -37,6 +37,7 @@ CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/chat
 CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/chat
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
+CREDITS_THRESHOLD=500
 ```
 
 ### Running the Project Locally
